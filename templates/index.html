@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Bot</title>
+    <style>
+		@keyframes movingColor {
+			0% { background-color: lightgray; }
+			50% { background-color: gray; }
+			100% { background-color: darkgray; }
+		}
+		
+		body {
+			background-color: beige;
+		}
+        .chat-container {
+            width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            /*border: 1px solid #ccc;*/
+            border-radius: 5px;
+			box-shadow: -16px 17px 23px #CCC;
+			margin-top: 20px;
+			background-color: white;
+			font-family: math;
+			position: relative;
+        }
+        .chat-message, .help-text {
+            margin-bottom: 10px;
+        }
+        .user-message {
+            text-align: right;
+            color: blue;
+        }
+        .bot-message, .help-text {
+            text-align: left;
+            color: green;
+        }
+		#user-input {
+			padding: 10px;
+			 width: 76%;
+		}
+		button {
+			padding: 10px 20px;
+			background-color: black;
+			color: white;
+			width: 20%;
+			cursor: pointer;
+		}
+		#chat-form {
+			margin-bottom: 20px;
+		}
+		.project-title {
+			margin-bottom: 20px;
+			text-align: center;			
+		}
+		.entrata {
+			color: red;
+		}
+		.chart-img {
+			width: 100%;
+			height: 500px;
+		}
+		.bot-message:not(:last-child) {
+			margin-bottom: 5px;
+			padding-bottom: 5px;
+			border-bottom: 1px solid #ccc;
+		}
+		#loader {
+			padding: 10px;
+			animation: movingColor 2s infinite ease;
+			color: white;
+		}
+		#loader p {
+			padding: 0px;
+			margin: 0;
+		}
+		#data-category {
+			padding: 10px;
+			width: 100%;
+		}
+		#data-sets {
+			width: 223px;
+			padding: 10px;
+			position: absolute;
+			right: 14px;
+			top: 14px;
+			background-color: lightgray;
+			border-radius: 5px;
+		}
+		#data-sets h4 {
+			margin-bottom: 13px;
+		}
+		#data-sets select {
+			border: 0px;
+			border-radius: 5px;
+		}
+		#to-top {
+			position: absolute;
+			right: 7px;
+			bottom: 7px;
+			background: rgba(0, 0, 0, 0.2);
+			border-radius: 5px;
+			opacity: 0.3;
+			z-index: 10;
+			visibility: hidden;
+			cursor: pointer;
+		}
+		#to-top:hover {
+			opacity: 1;
+		}
+    </style>
+</head>
+<body>
+	<h1 class="project-title">Welcome to the <span class="entrata">Entrata</span>Genie</h1>
+    <div class="chat-container">
+        <div class="help-text">Hello! How can I help you today?</div>
+        <!--<div class="chat-message user-message">Hi! I'd like to know about your products.</div>-->
+        <!-- Add more chat messages here dynamically -->
+        <form id="chat-form">			
+            <input type="text" id="user-input" name="query">
+			
+            <button type="button" id="voice-button">Tap to Talk</button>
+        </form>
+		
+		
+		<svg id="to-top" fill="#000000" version="1.1" id="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64px" height="64px" viewBox="0 0 32 32" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <style type="text/css"> .st0{fill:none;} </style> <title>Back to Top</title> <polygon points="16,14 6,24 7.4,25.4 16,16.8 24.6,25.4 26,24 "></polygon> <rect x="4" y="8" width="24" height="2"></rect> <rect id="_Transparent_Rectangle_" class="st0" width="32" height="32"></rect> </g></svg>
+		
+		
+    </div>
+	
+	<div id="data-sets">
+			<h4>Which datasets you intrested in?</h4>
+			<select id="data-category">
+				<option value="customer_properties" selected>Customers</option>
+				<option value="residents">Residents</option>
+				<option value="application_details">Applications</option>
+				<option value="payments">Payment</option>
+			</select>
+		</div>
+
+    <script>
+		const voiceButton = document.getElementById('voice-button');
+		
+		const getResult = async (q, dataset) => {
+			const response = await fetch("/query", {
+				method: "POST",
+				body: JSON.stringify({q, dataset}), 
+				headers: {
+				  "Content-Type": "application/json",                                                                                                
+				  "Access-Control-Origin": "*"
+				}
+				
+			});
+			const data = await response.json();
+			return data;
+		}
+		
+		voiceButton.addEventListener('click', () => {
+            // Request access to the user's microphone
+            navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const recognition = new window.webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+				var submitButton = document.querySelector('button');
+				submitButton.style.backgroundColor = "green";
+				submitButton.textContent = 'Listening...';
+
+                recognition.onresult = async (event) => {
+                    const transcript = event.results[0][0].transcript.trim();
+					var datasetSelect = document.getElementById("data-category");
+					// console.log(transcript);
+                    // document.getElementById('query').value = transcript;
+					var chatContainer = document.querySelector('.chat-container');
+					var userMessage = document.createElement('div');
+					
+					userMessage.className = 'chat-message user-message';
+					userMessage.textContent = transcript;
+					chatContainer.appendChild(userMessage);
+					window.scrollTo(0, document.body.scrollHeight);
+					
+					// show laoder 
+					showLoader(chatContainer);
+					
+                    // Submit the form
+                    result = await getResult(transcript, datasetSelect.value);
+					// console.log(result);
+					
+					// remove laoder 
+					removeLoader();
+					
+					var botMessage = document.createElement('div');
+					botMessage.className = 'chat-message bot-message';
+					
+					var responsePara = document.createElement('p');
+					responsePara.textContent = result.response;			
+					botMessage.appendChild(responsePara);
+					
+					if(result.chart_type && ['bar', 'line', 'scatter', 'pie', 'histogram', 'box', 'bar and box plot'].indexOf(result.chart_type) > -1 ) {
+						var responseChart = document.createElement('img');
+						responseChart.className = 'chart-img';
+						responseChart.setAttribute('src', result.image_url);						
+						responseChart.alt = "chart image";
+						botMessage.appendChild(responseChart);
+					}
+					
+					chatContainer.appendChild(botMessage);
+					//chatContainer.scrollTop = chatContainer.scrollHeight;
+					window.scrollTo(0, document.body.scrollHeight);					
+					
+					document.getElementById('user-input').value = '';
+					speakBotMessages();
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                };
+
+                recognition.onend = () => {
+					submitButton.style.backgroundColor = "black";
+					submitButton.textContent = 'Tap to Talk';
+                    console.log('Speech recognition ended');
+                };
+
+                recognition.start();
+            })
+            .catch(error => {
+                console.error('Error accessing microphone:', error);
+            });
+        });
+		
+		function speak(text) {
+			const utterance = new SpeechSynthesisUtterance(text);
+			utterance.lang = 'en-US';
+			
+			const voices = window.speechSynthesis.getVoices();
+			
+			const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('female') || voice.gender === 'female');
+			if (femaleVoice) {
+				utterance.voice = femaleVoice;
+			}
+			
+			window.speechSynthesis.speak(utterance);
+		}
+
+        function speakBotMessages() {			
+			var botMessagesElements = document.getElementsByClassName('chat-message bot-message');
+			if (botMessagesElements.length > 0) {
+				var lastElement = botMessagesElements[botMessagesElements.length - 1];
+				var lastElementContent = lastElement.querySelector('p').innerText;
+				var lastElementContent = lastElement.innerText;
+				speak(lastElementContent)
+			}
+        }
+		
+		window.speechSynthesis.onvoiceschanged = () => {
+			speakBotMessages();
+		};
+		
+		function showLoader( chatContainer ) {
+			var loaderDiv = document.createElement('div');
+			loaderDiv.setAttribute("id", "loader");
+			var loaderMessage = document.createElement('p');
+			loaderMessage.textContent = "Please wait while we retrieve the information for you...";
+			
+			loaderDiv.appendChild(loaderMessage);
+			chatContainer.appendChild(loaderDiv);
+		}
+		
+		function removeLoader() {
+			const loaderDiv = document.getElementById("loader");
+			loaderDiv.remove();
+		}
+		
+		window.onscroll = function() {scrollFunction()};
+		const toTopImage = document.getElementById("to-top");
+		
+		function scrollFunction() {
+		  if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+			toTopImage.style.visibility = "visible";
+		  } else {
+			toTopImage.style.visibility = "hidden";
+		  }
+		}
+		
+		toTopImage.addEventListener('click', function() {
+			window.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
+		});
+    </script>
+</body>
+</html>
