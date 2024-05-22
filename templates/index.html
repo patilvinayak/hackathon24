@@ -199,7 +199,7 @@
 					responsePara.textContent = result.response;			
 					botMessage.appendChild(responsePara);
 					
-					if(result.chart_type && ['bar', 'line', 'scatter', 'pie', 'histogram', 'box', 'bar and box plot'].indexOf(result.chart_type) > -1 ) {
+					if(result.chart_type && ['bar', 'line', 'scatter', 'pie', 'histogram', 'box plot', 'bar and box plot'].indexOf(result.chart_type) > -1 ) {
 						var responseChart = document.createElement('img');
 						responseChart.className = 'chart-img';
 						responseChart.setAttribute('src', result.image_url);						

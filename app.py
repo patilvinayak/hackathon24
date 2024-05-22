@@ -156,6 +156,7 @@ def execute_sql_query(conn, sql_query):
 
 def create_and_display_suggested_chart(chart_type, df, image_name):
     plt.figure(figsize=(20, 10))
+    is_chart_created = True;
 
     if chart_type == "bar":
         categorical_col = df.select_dtypes(include=['object']).columns[0]
@@ -191,12 +192,15 @@ def create_and_display_suggested_chart(chart_type, df, image_name):
         plt.ylabel('Frequency')
     elif chart_type == "box plot":
         numerical_col = df.select_dtypes(include=['number']).columns[0]
+        print(numerical_col)
         df[numerical_col].plot(kind='box')
         plt.title(f'Box plot of {numerical_col}')
     else:
+        is_chart_created = False
         print(f"The suggested chart type '{chart_type}' is not supported.")
 
-    plt.savefig('static/' + image_name)
+    if is_chart_created:
+        plt.savefig('static/' + image_name)
 
     #buf = io.BytesIO()
     #plt.savefig(buf, format='png')
@@ -204,7 +208,7 @@ def create_and_display_suggested_chart(chart_type, df, image_name):
     #img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     #buf.close()
     
-    #return img_base64
+    return is_chart_created
 
  
 
@@ -264,11 +268,15 @@ def query():
         response = generate_sql_response(columns, rows)
 
         chart_type = suggest_chart_type(columns, rows)
+        logging.info(chart_type)
         df = pd.DataFrame(rows, columns=columns)
-        create_and_display_suggested_chart(chart_type, df, new_image_name)
+        is_chart_created = create_and_display_suggested_chart(chart_type, df, new_image_name)
 
         image_url = url_for('static', filename=new_image_name)
-        logging.info(chart_type)
+
+        if not is_chart_created:
+            chart_type = ''
+       
         result = {
             "query": sql_query,
             "response": response,
@@ -288,34 +296,6 @@ def query():
 
     return jsonify(result)
 
-@app.route('/charts', methods=['GET'])
-def charts():
-    user_query = request.args.get('q')
-    table_name = 'customer_properties'
-    conn = connect_to_postgres()
-
-    try:
-        schema = get_table_schema(conn, table_name)
-        sql_query = generate_sql_query(schema, user_query)
-        columns, rows = execute_sql_query(conn, sql_query)
-        response = generate_sql_response(columns, rows)
-
-        chart_type = suggest_chart_type(columns, rows)
-        df = pd.DataFrame(rows, columns=columns)
-        create_and_display_suggested_chart(chart_type, df)
-
-    except Exception as e:
-        # Log the full traceback to the console
-        print(traceback.format_exc())
-        result = {
-            "query": "An error occurred while processing your query.",
-            "response": str(e),
-            "chart_type": None
-        }
-    finally:
-        conn.close()
-
-    return render_template('charts.html')
 
 if __name__ == "__main__":
     app.run(debug=True)
