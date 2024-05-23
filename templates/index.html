@@ -11,6 +11,13 @@
 			100% { background-color: darkgray; }
 		}
 		
+		@keyframes bounce {
+		   0%       { bottom:3px; }
+		  25%, 75% { bottom:10px; }
+		  50%      { bottom:15px; }
+		  100%     {bottom:0;}
+		}
+		
 		body {
 			background-color: beige;
 		}
@@ -106,6 +113,7 @@
 			z-index: 10;
 			visibility: hidden;
 			cursor: pointer;
+			 -webkit-animation:bounce 1s infinite;
 		}
 		#to-top:hover {
 			opacity: 1;
@@ -180,7 +188,8 @@
 					userMessage.className = 'chat-message user-message';
 					userMessage.textContent = transcript;
 					chatContainer.appendChild(userMessage);
-					window.scrollTo(0, document.body.scrollHeight);
+					//window.scrollTo(0, document.body.scrollHeight);
+					scrollToBottom();
 					
 					// show laoder 
 					showLoader(chatContainer);
@@ -209,7 +218,8 @@
 					
 					chatContainer.appendChild(botMessage);
 					//chatContainer.scrollTop = chatContainer.scrollHeight;
-					window.scrollTo(0, document.body.scrollHeight);					
+					//window.scrollTo(0, document.body.scrollHeight);	
+					scrollToBottom();
 					
 					document.getElementById('user-input').value = '';
 					speakBotMessages();
@@ -232,26 +242,55 @@
             });
         });
 		
-		function speak(text) {
-			const utterance = new SpeechSynthesisUtterance(text);
-			utterance.lang = 'en-US';
-			
-			const voices = window.speechSynthesis.getVoices();
-			
-			const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('female') || voice.gender === 'female');
-			if (femaleVoice) {
-				utterance.voice = femaleVoice;
+		//=========================== Text to voice =======================
+		
+		let voices = [];
+
+		function loadVoices() {
+			voices = speechSynthesis.getVoices();
+
+			if (voices.length !== 0) {
+				console.log("Voices loaded:", voices);
+			} else {
+				// Try again if voices are not yet available
+				setTimeout(loadVoices, 100);
 			}
-			
-			window.speechSynthesis.speak(utterance);
+		}
+
+		loadVoices();
+		
+		function speak(text) {			
+			if ('speechSynthesis' in window) {
+				speechSynthesis.cancel(); // Stop any ongoing speech
+				const utterance = new SpeechSynthesisUtterance(text);
+
+				// Optional: Select a specific voice if available
+				const femaleVoice = voices.find(voice => voice.name === 'Google UK English Female');
+				if (femaleVoice) {
+					utterance.voice = femaleVoice;
+				}
+
+				utterance.onend = () => {
+					console.log("Speech has finished.");
+				};
+
+				utterance.onerror = (event) => {
+					console.error("SpeechSynthesisUtterance error:", event);
+				};
+
+				speechSynthesis.speak(utterance);
+			} else {
+				console.error("Text-to-speech is not supported in this browser.");
+			}
 		}
 
         function speakBotMessages() {			
 			var botMessagesElements = document.getElementsByClassName('chat-message bot-message');
+			// console.log(botMessagesElements.length);
 			if (botMessagesElements.length > 0) {
 				var lastElement = botMessagesElements[botMessagesElements.length - 1];
+				// console.log(lastElement);
 				var lastElementContent = lastElement.querySelector('p').innerText;
-				var lastElementContent = lastElement.innerText;
 				speak(lastElementContent)
 			}
         }
@@ -259,6 +298,10 @@
 		window.speechSynthesis.onvoiceschanged = () => {
 			speakBotMessages();
 		};
+		
+		//=========================== Text to voice END Here =======================
+		
+		//=========================== Loader =======================================
 		
 		function showLoader( chatContainer ) {
 			var loaderDiv = document.createElement('div');
@@ -274,6 +317,8 @@
 			const loaderDiv = document.getElementById("loader");
 			loaderDiv.remove();
 		}
+		
+		//=========================== Loader END Here ==============================
 		
 		window.onscroll = function() {scrollFunction()};
 		const toTopImage = document.getElementById("to-top");
@@ -292,6 +337,13 @@
 				behavior: 'smooth'
 			});
 		});
+		
+		function scrollToBottom() {	
+			window.scrollTo({
+				top: document.body.scrollHeight,
+				behavior: 'smooth'
+			});
+		}
     </script>
 </body>
 </html>
